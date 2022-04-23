@@ -12,6 +12,17 @@ function insertPlaceholder(draggingEl, placeholderEl) {
   draggingEl.parentNode.insertBefore(placeholderEl, draggingEl.nextSibling)
 }
 
+function animateDraggingEl(draggingEl) {
+  return draggingEl.animate(
+    [
+      {color: "grey", borderColor: "grey"},
+      {color: "red", borderColor: "red"},
+      {color: "grey", borderColor: "grey"},
+    ],
+    1000
+  )
+}
+
 function swapElements(
   elements,
   draggingEl,
@@ -20,9 +31,11 @@ function swapElements(
 ) {
   Array.from(elements).forEach(element => {
     if (element !== draggingEl) {
-      // checking overlapping is easier than checking position
+      /**
+       * if draggingEl overlaps with this element vertically,
+       * swap this element with placeholder
+       */
       if (element.offsetTop === draggingEl.offsetTop) {
-        // swap placeholder and element positions
         if (draggingEl.offsetTop < draggingElInitOffsetTop) { // dragging upwards
           draggingEl.parentNode.insertBefore(placeholderEl, element)
         } else {
@@ -53,6 +66,9 @@ function swapElementsByDragAndDrop() {
     clientX = event.clientX
     clientY = event.clientY
 
+    draggingEl.style.color = "red"
+    draggingEl.style.borderColor = "red"
+
     document.addEventListener("mousemove", handleMouseMove)
     document.addEventListener("mouseup", handleMouseUp)
   }
@@ -69,8 +85,6 @@ function swapElementsByDragAndDrop() {
     draggingEl.style.left = `${draggingEl.offsetLeft + event.clientX - clientX}px`
     draggingEl.style.top = `${draggingEl.offsetTop + event.clientY - clientY}px`
 
-    // check if Y position of draggingEl
-    // overlaps with another element
     swapElements(
       items,
       draggingEl,
@@ -84,21 +98,37 @@ function swapElementsByDragAndDrop() {
 
   const handleMouseUp = () => {
     if (isDraggingStarted) {
-      // fix draggingEl at placeholder's current position
       draggingEl.style.removeProperty("top")
       draggingEl.style.removeProperty("left")
       draggingEl.style.removeProperty("position")
-      draggingEl.parentNode.insertBefore(draggingEl, placeholder)
-      // remove placeholder
-      placeholder && draggingEl.parentNode.removeChild(placeholder)
 
-      draggingEl = null
-      elementWidth = null
-      elementHeight = null
-      clientX = null
-      clientY = null
+      // fix draggingEl at placeholder's current position
+      draggingEl.parentNode.insertBefore(draggingEl, placeholder)
+
+      placeholder && draggingEl.parentNode.removeChild(placeholder)
+      placeholder = null
+
       isDraggingStarted = false
     }
+
+    elementWidth = null
+    elementHeight = null
+    elementY = null
+    clientX = null
+    clientY = null
+
+    /**
+     * Falls back to styles specified in css and
+     * hover styles applies properly.
+     * Using:
+     *   draggingEl.style.color = "grey"
+     *   draggingEl.style.borderColor = "grey"
+     * will override hover styles.
+    */
+    draggingEl.style.removeProperty("color")
+    draggingEl.style.removeProperty("border-color")
+
+    draggingEl = null
 
     document.removeEventListener("mousemove", handleMouseMove)
     document.removeEventListener("mouseup", handleMouseUp)
