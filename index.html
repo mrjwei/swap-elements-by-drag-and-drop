@@ -2,43 +2,44 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Document</title>
+  <title>Swap Elements by Drag and Drop</title>
   <style>
     * {
       box-sizing: border-box;
     }
-    .draggable {
-        cursor: move;
-        margin-bottom: 1rem;
-        user-select: none;
-
-        /* Center the content */
-        align-items: center;
-        display: flex;
-        justify-content: center;
-
-        /* Size */
-        height: 4rem;
-        width: 16rem;
-
-        /* Misc */
-        border: 1px solid #cbd5e0;
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0 auto;
+      width: 16rem;
+      position: relative;
+    }
+    .item {
+      cursor: move;
+      margin-bottom: 1rem;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 4rem;
+      width: 100%;
+      border: 1px solid #cbd5e0;
     }
     .placeholder {
-        background-color: #edf2f7;
-        border: 2px dashed #cbd5e0;
-        margin-bottom: 1rem;
+      background-color: #edf2f7;
+      border: 2px dashed #cbd5e0;
+      margin-bottom: 1rem;
     }
   </style>
 </head>
 <body>
-  <div id="list">
-    <div class="draggable">A</div>
-    <div class="draggable">B</div>
-    <div class="draggable">C</div>
-    <div class="draggable">D</div>
-    <div class="draggable">E</div>
-</div>
-<script src="./index.js"></script>
+  <ul>
+    <li class="item">Dan</li>
+    <li class="item">Jackson</li>
+    <li class="item">Alice</li>
+    <li class="item">Bob</li>
+    <li class="item">Wayne</li>
+  </ul>
+  <script src="./index.js"></script>
 </body>
 </html>
