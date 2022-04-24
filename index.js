@@ -56,168 +56,131 @@ function swapElementsByDragAndDrop() {
   let clientY
   let placeholder
   let isDraggingStarted = false
+  let touch
+  let moveHandler
+  let endHandler
 
-  const handleMouseDown = (event) => {
-    draggingEl = event.target
+  const handleStart = (isTouchEvent = false) => {
+    return (event) => {
+      draggingEl = event.target
 
-    elementWidth = draggingEl.offsetWidth
-    elementHeight = draggingEl.offsetHeight
-    elementY = draggingEl.offsetTop
-    clientX = event.clientX
-    clientY = event.clientY
+      draggingEl.style.color = "red"
+      draggingEl.style.borderColor = "red"
 
-    draggingEl.style.color = "red"
-    draggingEl.style.borderColor = "red"
+      elementWidth = draggingEl.offsetWidth
+      elementHeight = draggingEl.offsetHeight
+      elementY = draggingEl.offsetTop
 
-    document.addEventListener("mousemove", handleMouseMove)
-    document.addEventListener("mouseup", handleMouseUp)
-  }
-
-  const handleMouseMove = (event) => {
-    if (!isDraggingStarted) { // only create placeholder once
-      isDraggingStarted = true
-
-      placeholder = createPlaceholder()
-      configPlaceholder(placeholder, elementWidth, elementHeight)
-      insertPlaceholder(draggingEl, placeholder)
+      if (isTouchEvent) {
+        touch = event.changedTouches[0]
+        moveHandler = handleMove(true)
+        endHandler = handleEnd(true)
+        clientX = touch.clientX
+        clientY = touch.clientY
+        document.addEventListener("touchmove", moveHandler)
+        document.addEventListener("touchend", endHandler)
+      } else {
+        clientX = event.clientX
+        clientY = event.clientY
+        moveHandler = handleMove()
+        endHandler = handleEnd()
+        document.addEventListener("mousemove", moveHandler)
+        document.addEventListener("mouseup", endHandler)
+      }
     }
-    draggingEl.style.position = "absolute"
-    draggingEl.style.left = `${draggingEl.offsetLeft + event.clientX - clientX}px`
-    draggingEl.style.top = `${draggingEl.offsetTop + event.clientY - clientY}px`
-
-    swapElements(
-      items,
-      draggingEl,
-      elementY,
-      placeholder
-    )
-
-    clientX = event.clientX
-    clientY = event.clientY
   }
 
-  const handleMouseUp = () => {
-    if (isDraggingStarted) {
-      draggingEl.style.removeProperty("top")
-      draggingEl.style.removeProperty("left")
-      draggingEl.style.removeProperty("position")
+  const handleMove = (isTouchEvent = false) => {
+    return (event) => {
+      if (!isDraggingStarted) { // only create placeholder once
+        isDraggingStarted = true
 
-      // fix draggingEl at placeholder's current position
-      draggingEl.parentNode.insertBefore(draggingEl, placeholder)
+        placeholder = createPlaceholder()
+        configPlaceholder(placeholder, elementWidth, elementHeight)
+        insertPlaceholder(draggingEl, placeholder)
+      }
 
-      placeholder && draggingEl.parentNode.removeChild(placeholder)
-      placeholder = null
+      draggingEl.style.position = "absolute"
 
-      isDraggingStarted = false
+      if (isTouchEvent) {
+        touch = event.changedTouches[0]
+        draggingEl.style.left = `${draggingEl.offsetLeft + touch.clientX - clientX}px`
+        draggingEl.style.top = `${draggingEl.offsetTop + touch.clientY - clientY}px`
+      } else {
+        draggingEl.style.left = `${draggingEl.offsetLeft + event.clientX - clientX}px`
+        draggingEl.style.top = `${draggingEl.offsetTop + event.clientY - clientY}px`
+      }
+
+      swapElements(
+        items,
+        draggingEl,
+        elementY,
+        placeholder
+      )
+
+      if (isTouchEvent) {
+        touch = event.changedTouches[0]
+        clientX = touch.clientX
+        clientY = touch.clientY
+      } else {
+        clientX = event.clientX
+        clientY = event.clientY
+      }
     }
-
-    elementWidth = null
-    elementHeight = null
-    elementY = null
-    clientX = null
-    clientY = null
-
-    /**
-     * Falls back to styles specified in css and
-     * hover styles applies properly.
-     * Using:
-     *   draggingEl.style.color = "grey"
-     *   draggingEl.style.borderColor = "grey"
-     * will override hover styles.
-    */
-    draggingEl.style.removeProperty("color")
-    draggingEl.style.removeProperty("border-color")
-
-    draggingEl = null
-
-    document.removeEventListener("mousemove", handleMouseMove)
-    document.removeEventListener("mouseup", handleMouseUp)
   }
 
-  const handleTouchStart = (event) => {
-    draggingEl = event.target
+  const handleEnd = (isTouchEvent = false) => {
+    return (event) => {
+      if (isDraggingStarted) {
+        draggingEl.style.removeProperty("top")
+        draggingEl.style.removeProperty("left")
+        draggingEl.style.removeProperty("position")
 
-    const touch = event.changedTouches[0]
+        // fix draggingEl at placeholder's current position
+        draggingEl.parentNode.insertBefore(draggingEl, placeholder)
 
-    elementWidth = draggingEl.offsetWidth
-    elementHeight = draggingEl.offsetHeight
-    elementY = draggingEl.offsetTop
-    clientX = touch.clientX
-    clientY = touch.clientY
+        placeholder && draggingEl.parentNode.removeChild(placeholder)
+        placeholder = null
 
-    draggingEl.style.color = "red"
-    draggingEl.style.borderColor = "red"
+        isDraggingStarted = false
+      }
 
-    document.addEventListener("touchmove", handleTouchMove)
-    document.addEventListener("touchend", handleTouchUp)
-  }
+      elementWidth = null
+      elementHeight = null
+      elementY = null
+      clientX = null
+      clientY = null
+      touch = null
 
-  const handleTouchMove = (event) => {
-    const touch = event.changedTouches[0]
+      /**
+       * Falls back to styles specified in css and
+       * hover styles applies properly.
+       * Using:
+       *   draggingEl.style.color = "grey"
+       *   draggingEl.style.borderColor = "grey"
+       * will override hover styles.
+      */
+      draggingEl.style.removeProperty("color")
+      draggingEl.style.removeProperty("border-color")
 
-    if (!isDraggingStarted) { // only create placeholder once
-      isDraggingStarted = true
+      draggingEl = null
 
-      placeholder = createPlaceholder()
-      configPlaceholder(placeholder, elementWidth, elementHeight)
-      insertPlaceholder(draggingEl, placeholder)
+      if (isTouchEvent) {
+        document.removeEventListener("touchmove", moveHandler)
+        document.removeEventListener("touchend", endHandler)
+      } else {
+        document.removeEventListener("mousemove", moveHandler)
+        document.removeEventListener("mouseup", endHandler)
+      }
+
+      moveHandler = null
+      endHandler = null
     }
-    draggingEl.style.position = "absolute"
-    draggingEl.style.left = `${draggingEl.offsetLeft + touch.clientX - clientX}px`
-    draggingEl.style.top = `${draggingEl.offsetTop + touch.clientY - clientY}px`
-
-    swapElements(
-      items,
-      draggingEl,
-      elementY,
-      placeholder
-    )
-
-    clientX = touch.clientX
-    clientY = touch.clientY
-  }
-
-  const handleTouchUp = (event) => {
-    if (isDraggingStarted) {
-      draggingEl.style.removeProperty("top")
-      draggingEl.style.removeProperty("left")
-      draggingEl.style.removeProperty("position")
-
-      // fix draggingEl at placeholder's current position
-      draggingEl.parentNode.insertBefore(draggingEl, placeholder)
-
-      placeholder && draggingEl.parentNode.removeChild(placeholder)
-      placeholder = null
-
-      isDraggingStarted = false
-    }
-
-    elementWidth = null
-    elementHeight = null
-    elementY = null
-    clientX = null
-    clientY = null
-
-    /**
-     * Falls back to styles specified in css and
-     * hover styles applies properly.
-     * Using:
-     *   draggingEl.style.color = "grey"
-     *   draggingEl.style.borderColor = "grey"
-     * will override hover styles.
-    */
-    draggingEl.style.removeProperty("color")
-    draggingEl.style.removeProperty("border-color")
-
-    draggingEl = null
-
-    document.removeEventListener("touchmove", handleTouchMove)
-    document.removeEventListener("touchend", handleTouchUp)
   }
 
   Array.from(items).forEach(item => {
-    item.addEventListener("mousedown", handleMouseDown)
-    item.addEventListener("touchstart", handleTouchStart)
+    item.addEventListener("mousedown", handleStart())
+    item.addEventListener("touchstart", handleStart(true))
   })
 }
 
