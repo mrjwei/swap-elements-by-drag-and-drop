@@ -12,14 +12,31 @@ function insertPlaceholder(draggingEl, placeholderEl) {
   draggingEl.parentNode.insertBefore(placeholderEl, draggingEl.nextSibling)
 }
 
-function animateDraggingEl(draggingEl) {
+function animateDraggingElIn(draggingEl) {
   return draggingEl.animate(
     [
       {color: "grey", borderColor: "grey"},
-      {color: "red", borderColor: "red"},
-      {color: "grey", borderColor: "grey"},
+      {color: "red", borderColor: "red"}
     ],
-    1000
+    {
+      duration: 200,
+      fill: 'forwards',
+      easing: "ease-in"
+    }
+  )
+}
+
+function animateDraggingElOut(draggingEl) {
+  return draggingEl.animate(
+    [
+      {color: "red", borderColor: "red"},
+      {color: "grey", borderColor: "grey"}
+    ],
+    {
+      duration: 200,
+      fill: 'forwards',
+      easing: "ease-in"
+    }
   )
 }
 
@@ -59,17 +76,18 @@ function swapElementsByDragAndDrop() {
   let touch
   let moveHandler
   let endHandler
+  let inAnimation
+  let outAnimation
 
   const handleStart = (isTouchEvent = false) => {
     return (event) => {
       draggingEl = event.target
 
-      draggingEl.style.color = "red"
-      draggingEl.style.borderColor = "red"
-
       elementWidth = draggingEl.offsetWidth
       elementHeight = draggingEl.offsetHeight
       elementY = draggingEl.offsetTop
+
+      inAnimation = animateDraggingElIn(draggingEl)
 
       if (isTouchEvent) {
         touch = event.changedTouches[0]
@@ -145,26 +163,6 @@ function swapElementsByDragAndDrop() {
         isDraggingStarted = false
       }
 
-      elementWidth = null
-      elementHeight = null
-      elementY = null
-      clientX = null
-      clientY = null
-      touch = null
-
-      /**
-       * Falls back to styles specified in css and
-       * hover styles applies properly.
-       * Using:
-       *   draggingEl.style.color = "grey"
-       *   draggingEl.style.borderColor = "grey"
-       * will override hover styles.
-      */
-      draggingEl.style.removeProperty("color")
-      draggingEl.style.removeProperty("border-color")
-
-      draggingEl = null
-
       if (isTouchEvent) {
         document.removeEventListener("touchmove", moveHandler)
         document.removeEventListener("touchend", endHandler)
@@ -173,6 +171,21 @@ function swapElementsByDragAndDrop() {
         document.removeEventListener("mouseup", endHandler)
       }
 
+      inAnimation.finished
+        .then(() => {
+          outAnimation = animateDraggingElOut(draggingEl)
+          outAnimation.finished
+            .then(() => {
+              draggingEl = null
+          })
+        })
+
+      elementWidth = null
+      elementHeight = null
+      elementY = null
+      clientX = null
+      clientY = null
+      touch = null
       moveHandler = null
       endHandler = null
     }
