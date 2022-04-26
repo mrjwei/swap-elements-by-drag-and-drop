@@ -1,191 +1,171 @@
-function createPlaceholder() {
-  return document.createElement("li")
-}
+class SwapByDragAndDrop {
+  constructor(elements, isTouchEvent) {
+    this.elements = elements
+    this.isTouchEvent = isTouchEvent
+    this.startEvent = isTouchEvent === true ? "touchstart" : "mousedown"
+    this.moveEvent = isTouchEvent === true ? "touchmove" : "mousemove"
+    this.endEvent = isTouchEvent === true ? "touchend" : "mouseup"
+    this.draggingEl = null
+    this.elementWidth = null
+    this.elementHeight = null
+    this.elementY = null
+    this.clientX = null
+    this.clientY = null
+    this.placeholder = null
+    this.isDraggingStarted = false
+    this.touch = null
+    this.moveHandler = null
+    this.endHandler = null
+  }
 
-function configPlaceholder(placeholderEl, width, height) {
-  placeholderEl.classList.add("placeholder")
-  placeholderEl.style.width = `${width}px`
-  placeholderEl.style.height = `${height}px`
-}
+  setPlaceholder = () => {
+    this.placeholder = document.createElement("li")
+  }
 
-function insertPlaceholder(draggingEl, placeholderEl) {
-  draggingEl.parentNode.insertBefore(placeholderEl, draggingEl.nextSibling)
-}
+  configPlaceholder = () => {
+    if (this.placeholder === null) return
 
-function animateDraggingEl(draggingEl) {
-  return draggingEl.animate(
-    [
-      {color: "grey", borderColor: "grey"},
-      {color: "red", borderColor: "red"},
-      {color: "grey", borderColor: "grey"},
-    ],
-    1000
-  )
-}
+    this.placeholder.classList.add("placeholder")
+    this.placeholder.style.width = `${this.elementWidth}px`
+    this.placeholder.style.height = `${this.elementHeight}px`
+  }
 
-function swapElements(
-  elements,
-  draggingEl,
-  draggingElInitOffsetTop,
-  placeholderEl
-) {
-  Array.from(elements).forEach(element => {
-    if (element !== draggingEl) {
-      /**
-       * if draggingEl overlaps with this element vertically,
-       * swap this element with placeholder
-       */
-      if (element.offsetTop === draggingEl.offsetTop) {
-        if (draggingEl.offsetTop < draggingElInitOffsetTop) { // dragging upwards
-          draggingEl.parentNode.insertBefore(placeholderEl, element)
-        } else {
-          draggingEl.parentNode.insertBefore(element, placeholderEl)
+  insertPlaceholder = () => {
+    this.draggingEl.parentNode.insertBefore(this.placeholder, this.draggingEl.nextSibling)
+  }
+
+  swapElements = () => {
+    Array.from(this.elements).forEach(element => {
+      if (element !== this.draggingEl) {
+        /**
+         * if draggingEl overlaps with this element vertically,
+         * swap this element with placeholder
+         */
+        if (element.offsetTop === this.draggingEl.offsetTop) {
+          if (this.draggingEl.offsetTop < this.elementY) { // dragging upwards
+            this.draggingEl.parentNode.insertBefore(this.placeholder, element)
+          } else {
+            this.draggingEl.parentNode.insertBefore(element, this.placeholder)
+          }
         }
       }
+    })
+  }
+
+  handleStart = (event) => {
+    this.draggingEl = event.target
+
+    this.draggingEl.style.color = "red"
+    this.draggingEl.style.borderColor = "red"
+
+    this.elementWidth = this.draggingEl.offsetWidth
+    this.elementHeight = this.draggingEl.offsetHeight
+    this.elementY = this.draggingEl.offsetTop
+
+    this.moveHandler = this.handleMove
+    this.endHandler = this.handleEnd
+
+    if (this.isTouchEvent) {
+      this.touch = event.changedTouches[0]
+      this.clientX = this.touch.clientX
+      this.clientY = this.touch.clientY
+    } else {
+      this.clientX = event.clientX
+      this.clientY = event.clientY
     }
-  })
+
+    document.addEventListener(this.moveEvent, this.moveHandler)
+    document.addEventListener(this.endEvent, this.endHandler)
+  }
+
+  handleMove = (event) => {
+    if (!this.isDraggingStarted) { // only create placeholder once
+      this.isDraggingStarted = true
+
+      this.setPlaceholder()
+      this.configPlaceholder()
+      this.insertPlaceholder()
+    }
+
+    this.draggingEl.style.position = "absolute"
+
+    if (this.isTouchEvent) {
+      this.touch = event.changedTouches[0]
+      this.draggingEl.style.left = `${this.draggingEl.offsetLeft + this.touch.clientX - this.clientX}px`
+      this.draggingEl.style.top = `${this.draggingEl.offsetTop + this.touch.clientY - this.clientY}px`
+    } else {
+      this.draggingEl.style.left = `${this.draggingEl.offsetLeft + event.clientX - this.clientX}px`
+      this.draggingEl.style.top = `${this.draggingEl.offsetTop + event.clientY - this.clientY}px`
+    }
+
+    this.swapElements()
+
+    if (this.isTouchEvent) {
+      this.touch = event.changedTouches[0]
+      this.clientX = this.touch.clientX
+      this.clientY = this.touch.clientY
+    } else {
+      this.clientX = event.clientX
+      this.clientY = event.clientY
+    }
+  }
+
+  handleEnd = () => {
+    if (this.isDraggingStarted) {
+      this.draggingEl.style.removeProperty("top")
+      this.draggingEl.style.removeProperty("left")
+      this.draggingEl.style.removeProperty("position")
+
+      // fix draggingEl at placeholder's current position
+      this.draggingEl.parentNode.insertBefore(this.draggingEl, this.placeholder)
+
+      this.placeholder && this.draggingEl.parentNode.removeChild(this.placeholder)
+      this.placeholder = null
+
+      this.isDraggingStarted = false
+    }
+
+    this.elementWidth = null
+    this.elementHeight = null
+    this.elementY = null
+    this.clientX = null
+    this.clientY = null
+    this.touch = null
+
+    /**
+     * Falls back to styles specified in css and
+     * hover styles applies properly.
+     * Using:
+     *   draggingEl.style.color = "grey"
+     *   draggingEl.style.borderColor = "grey"
+     * will override hover styles.
+    */
+    this.draggingEl.style.removeProperty("color")
+    this.draggingEl.style.removeProperty("border-color")
+
+    this.draggingEl = null
+
+    document.removeEventListener(this.moveEvent, this.moveHandler)
+    document.removeEventListener(this.endEvent, this.endHandler)
+
+    this.moveHandler = null
+    this.endHandler = null
+  }
 }
 
-function swapElementsByDragAndDrop() {
-  const items = document.querySelectorAll(".item")
-  let draggingEl
-  let elementWidth
-  let elementHeight
-  let elementY
-  let clientX
-  let clientY
-  let placeholder
-  let isDraggingStarted = false
-  let touch
-  let moveHandler
-  let endHandler
+const handler = () => {
+  const elements = document.querySelectorAll(".item")
+  const swapByDragAndDropWithMouse = new SwapByDragAndDrop(elements, false)
+  const swapByDragAndDropWithTouch = new SwapByDragAndDrop(elements, true)
 
-  const handleStart = (isTouchEvent = false) => {
-    return (event) => {
-      draggingEl = event.target
-
-      draggingEl.style.color = "red"
-      draggingEl.style.borderColor = "red"
-
-      elementWidth = draggingEl.offsetWidth
-      elementHeight = draggingEl.offsetHeight
-      elementY = draggingEl.offsetTop
-
-      if (isTouchEvent) {
-        touch = event.changedTouches[0]
-        moveHandler = handleMove(true)
-        endHandler = handleEnd(true)
-        clientX = touch.clientX
-        clientY = touch.clientY
-        document.addEventListener("touchmove", moveHandler)
-        document.addEventListener("touchend", endHandler)
-      } else {
-        clientX = event.clientX
-        clientY = event.clientY
-        moveHandler = handleMove()
-        endHandler = handleEnd()
-        document.addEventListener("mousemove", moveHandler)
-        document.addEventListener("mouseup", endHandler)
-      }
-    }
-  }
-
-  const handleMove = (isTouchEvent = false) => {
-    return (event) => {
-      if (!isDraggingStarted) { // only create placeholder once
-        isDraggingStarted = true
-
-        placeholder = createPlaceholder()
-        configPlaceholder(placeholder, elementWidth, elementHeight)
-        insertPlaceholder(draggingEl, placeholder)
-      }
-
-      draggingEl.style.position = "absolute"
-
-      if (isTouchEvent) {
-        touch = event.changedTouches[0]
-        draggingEl.style.left = `${draggingEl.offsetLeft + touch.clientX - clientX}px`
-        draggingEl.style.top = `${draggingEl.offsetTop + touch.clientY - clientY}px`
-      } else {
-        draggingEl.style.left = `${draggingEl.offsetLeft + event.clientX - clientX}px`
-        draggingEl.style.top = `${draggingEl.offsetTop + event.clientY - clientY}px`
-      }
-
-      swapElements(
-        items,
-        draggingEl,
-        elementY,
-        placeholder
-      )
-
-      if (isTouchEvent) {
-        touch = event.changedTouches[0]
-        clientX = touch.clientX
-        clientY = touch.clientY
-      } else {
-        clientX = event.clientX
-        clientY = event.clientY
-      }
-    }
-  }
-
-  const handleEnd = (isTouchEvent = false) => {
-    return (event) => {
-      if (isDraggingStarted) {
-        draggingEl.style.removeProperty("top")
-        draggingEl.style.removeProperty("left")
-        draggingEl.style.removeProperty("position")
-
-        // fix draggingEl at placeholder's current position
-        draggingEl.parentNode.insertBefore(draggingEl, placeholder)
-
-        placeholder && draggingEl.parentNode.removeChild(placeholder)
-        placeholder = null
-
-        isDraggingStarted = false
-      }
-
-      elementWidth = null
-      elementHeight = null
-      elementY = null
-      clientX = null
-      clientY = null
-      touch = null
-
-      /**
-       * Falls back to styles specified in css and
-       * hover styles applies properly.
-       * Using:
-       *   draggingEl.style.color = "grey"
-       *   draggingEl.style.borderColor = "grey"
-       * will override hover styles.
-      */
-      draggingEl.style.removeProperty("color")
-      draggingEl.style.removeProperty("border-color")
-
-      draggingEl = null
-
-      if (isTouchEvent) {
-        document.removeEventListener("touchmove", moveHandler)
-        document.removeEventListener("touchend", endHandler)
-      } else {
-        document.removeEventListener("mousemove", moveHandler)
-        document.removeEventListener("mouseup", endHandler)
-      }
-
-      moveHandler = null
-      endHandler = null
-    }
-  }
-
-  Array.from(items).forEach(item => {
-    item.addEventListener("mousedown", handleStart())
-    item.addEventListener("touchstart", handleStart(true))
+  Array.from(elements).forEach(element => {
+    element.addEventListener(swapByDragAndDropWithMouse.startEvent, swapByDragAndDropWithMouse.handleStart)
+    element.addEventListener(swapByDragAndDropWithTouch.startEvent, swapByDragAndDropWithTouch.handleStart)
   })
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", swapElementsByDragAndDrop)
+  document.addEventListener("DOMContentLoaded", handler)
 } else {
-  swapElementsByDragAndDrop()
+  handler()
 }
